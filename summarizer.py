@@ -1,3 +1,8 @@
+"""
+Lightweight TextRank summarizer
+Uses NLTK + NetworkX only (no transformers / torch)
+"""
+
 import nltk
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
@@ -5,73 +10,65 @@ from nltk.cluster.util import cosine_distance
 import numpy as np
 import networkx as nx
 
-nltk.download('punkt', quiet=True)
-nltk.download('stopwords', quiet=True)
+# Download NLTK data on first boot (safe if already present)
+nltk.download("punkt", quiet=True)
+nltk.download("stopwords", quiet=True)
 
-def build_similarity_matrix(sentences):
-    """Build a similarity matrix for sentences using cosine similarity."""
-    stop_words = set(stopwords.words('english'))
-    similarity_matrix = np.zeros((len(sentences), len(sentences)))
+STOP_WORDS = set(stopwords.words("english"))
 
-    for i in range(len(sentences)):
-        for j in range(len(sentences)):
-            if i == j:
-                continue
-            sentence1 = [word.lower() for word in word_tokenize(sentences[i]) if word.lower() not in stop_words and word.isalnum()]
-            sentence2 = [word.lower() for word in word_tokenize(sentences[j]) if word.lower() not in stop_words and word.isalnum()]
-            if not sentence1 or not sentence2:
-                continue
-            similarity = 1 - cosine_distance(
-                np.array([sentence1.count(word) for word in set(sentence1 + sentence2)]),
-                np.array([sentence2.count(word) for word in set(sentence1 + sentence2)])
-            )
-            similarity_matrix[i][j] = similarity
+def _sentence_vector(sentence):
+    """Return frequency vector for a sentence."""
+    words = [w.lower() for w in word_tokenize(sentence) if w.isalnum()]
+    all_words = list(set(words))
+    return np.array([words.count(w) for w in all_words]), all_words
 
-    return similarity_matrix
+def _similarity(s1, s2):
+    v1, vocab = _sentence_vector(s1)
+    v2 = np.array([s2.lower().split().count(w) for w in vocab])
+    if v1.sum() == 0 or v2.sum() == 0:
+        return 0
+    return 1 - cosine_distance(v1, v2)
 
-def summarize_text(text):
-    """Summarize text using TextRank with a word limit."""
-    try:
-        # Handle empty or whitespace-only text
-        if not text or not text.strip():
-            return "No summary available due to missing content."
+def summarize_text(text: str) -> str:
+    """Return a ~100-word TextRank summary (or fallback string)."""
+    if not text or not text.strip():
+        return "No summary available."
 
-        words = text.split()
-        # If text is too short, return it as-is or a truncated version
-        if len(words) < 10:
-            return " ".join(words) if len(words) > 0 else "No summary available."
+    # Truncate to 500 words for speed
+    words = text.split()
+    text = " ".join(words[:500])
 
-        # Truncate input text to first 500 words
-        text = " ".join(words[:500])
+    # Short texts just return themselves
+    if len(words) < 30:
+        return text
 
-        # Tokenize into sentences
-        sentences = sent_tokenize(text)
-        if not sentences:
-            return " ".join(words[:10]) + "..." if words else "No summary available."
+    sentences = sent_tokenize(text)
+    if len(sentences) == 1:
+        return sentences[0]
 
-        # Build similarity matrix and rank sentences
-        similarity_matrix = build_similarity_matrix(sentences)
-        sentence_graph = nx.from_numpy_array(similarity_matrix)
-        scores = nx.pagerank(sentence_graph, max_iter=100, tol=1e-06)
+    # Build similarity matrix
+    size = len(sentences)
+    sim_matrix = np.zeros((size, size))
+    for i in range(size):
+        for j in range(size):
+            if i != j:
+                sim_matrix[i][j] = _similarity(sentences[i], sentences[j])
 
-        # Sort sentences by score
-        ranked_sentences = sorted(((scores[i], s, len(word_tokenize(s))) for i, s in enumerate(sentences)), reverse=True)
+    # Rank sentences
+    scores = nx.pagerank(nx.from_numpy_array(sim_matrix))
+    ranked = sorted(
+        ((scores[i], s, len(word_tokenize(s))) for i, s in enumerate(sentences)),
+        reverse=True,
+    )
 
-        # Select sentences until ~100 words
-        summary_sentences = []
-        total_words = 0
-        for score, sentence, word_count in ranked_sentences:
-            if total_words + word_count > 100:
-                break
-            summary_sentences.append(sentence)
-            total_words += word_count
+    # Pick sentences until ~100 words
+    chosen, total = [], 0
+    for _, sent, wc in ranked:
+        if total + wc > 100:
+            break
+        chosen.append(sent)
+        total += wc
 
-        # Order selected sentences by their original position
-        summary_sentences.sort(key=lambda s: sentences.index(s))
-
-        summary = " ".join(summary_sentences)
-        return summary if summary.strip() else "Summary too brief to generate."
-
-    except Exception as e:
-        print(f"Error during TextRank summarization: {e}")
-        return "Summary unavailable due to error. Partial text: " + text[:50] + "..." if text else "No content to summarize."
+    chosen.sort(key=lambda s: sentences.index(s))
+    summary = " ".join(chosen)
+    return summary if summary.strip() else "Summary unavailable."
