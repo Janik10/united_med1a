@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily News Brew</title>
+  <title>United Med1a</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">  
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -14,7 +14,7 @@
     <div class="container">
       <nav>
         <div class="logo">
-          <h1>Daily News Brew</h1>
+          <h1>United Med1a</h1>
         </div>
         <div class="menu-toggle">
           <span></span>
@@ -22,10 +22,7 @@
           <span></span>
         </div>
         <div class="nav-links">
-          <a href="{{ url_for('index') }}" {% if not selected_category %}class="active"{% endif %}>Home</a>
-          {% for category in categories %}
-            <a href="{{ url_for('category_filter', category=category) }}" {% if selected_category and selected_category.lower() == category.lower() %}class="active"{% endif %}>{{ category|capitalize }}</a>
-          {% endfor %}
+         
         </div>
         <!-- Removed auth-buttons since no login/logout -->
       </nav>
@@ -85,7 +82,7 @@
     <div class="container">
       <div class="footer-content">
         <div class="footer-logo">
-          <h2>Daily News Brew</h2>
+          <h2>United Med1a</h2>
           <p>Your trusted source for daily news summaries</p>
         </div>
         <div class="footer-links">
@@ -113,7 +110,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2025 Daily News Brew. All rights reserved.</p>
+        <p>© 2025 United Med1a. All rights reserved.</p>
       </div>
     </div>
   </footer>

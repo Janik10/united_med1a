@@ -3,4 +3,9 @@ requests
 transformers
 torch
 feedparser
+gunicorn
+beautifulsoup4
 nltk
+numpy
+networkx
+scipy
