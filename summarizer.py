@@ -55,7 +55,8 @@ def summarize_text(text: str) -> str:
                 sim_matrix[i][j] = _similarity(sentences[i], sentences[j])
 
     # Rank sentences
-    scores = nx.pagerank_numpy(nx.from_numpy_array(sim_matrix))
+    scores_dict = nx.pagerank(nx.from_numpy_array(sim_matrix), alpha=0.85, max_iter=100, tol=1e-4)
+    scores = [scores_dict[i] for i in range(len(sentences))]
     ranked = sorted(
         ((scores[i], s, len(word_tokenize(s))) for i, s in enumerate(sentences)),
         reverse=True,
