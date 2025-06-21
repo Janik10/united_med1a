@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily News Brew</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">  
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <nav>
+        <div class="logo">
+          <h1>Daily News Brew</h1>
+        </div>
+        <div class="menu-toggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="nav-links">
+          <a href="{{ url_for('index') }}" {% if not selected_category %}class="active"{% endif %}>Home</a>
+          {% for category in categories %}
+            <a href="{{ url_for('category_filter', category=category) }}" {% if selected_category and selected_category.lower() == category.lower() %}class="active"{% endif %}>{{ category|capitalize }}</a>
+          {% endfor %}
+        </div>
+        <!-- Removed auth-buttons since no login/logout -->
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h2>Stay Informed with Today's Top Stories</h2>
+      <div class="search-container">
+        <form action="{{ url_for('search') }}" method="GET">
+          <input type="text" id="search-input" name="query" placeholder="Search news..." autocomplete="off" value="{{ request.args.get('query', '') }}">
+          <button type="submit">Search</button>
+          <div id="autocomplete-results" style="display: none; background: white; border: 1px solid #e2e8f0; border-radius: 8px; position: absolute; width: 100%; max-height: 200px; overflow-y: auto; z-index: 100;"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Topics Section -->
+  <section class="topics-section">
+    <div class="container">
+      <div class="topics">
+        <a href="{{ url_for('index') }}" class="topic-button {% if not selected_category %}active{% endif %}">All</a>
+        {% for category in categories %}
+          <a href="{{ url_for('category_filter', category=category) }}" class="topic-button {% if selected_category and selected_category.lower() == category.lower() %}active{% endif %}">{{ category|capitalize }}</a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% for article in articles %}
+        <article class="news-article">
+          <h2>{{ article.title }}</h2>
+          <p>{{ article.summary }}</p>
+          <p class="source">Source: {{ article.source }}</p>
+          <a href="{{ article.url }}" target="_blank" rel="noopener">Read More</a>
+          <!-- Removed Save Article button since no authentication -->
+        </article>
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <h2>Daily News Brew</h2>
+          <p>Your trusted source for daily news summaries</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-column">
+            <h3>Categories</h3>
+            <a href="#">Politics</a>
+            <a href="#">Technology</a>
+            <a href="#">Business</a>
+            <a href="#">Health</a>
+            <a href="#">Science</a>
+          </div>
+          <div class="footer-column">
+            <h3>Company</h3>
+            <a href="#">About Us</a>
+            <a href="#">Contact</a>
+            <a href="#">Careers</a>
+            <a href="#">Advertise</a>
+          </div>
+          <div class="footer-column">
+            <h3>Legal</h3>
+            <a href="#">Terms of Service</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Cookie Policy</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2025 Daily News Brew. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Menu Toggle and Search Autocomplete -->
+  <script>
+    // Menu Toggle
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navLinks = document.querySelector('.nav-links');
+    menuToggle.addEventListener('click', () => {
+      menuToggle.classList.toggle('active');
+      navLinks.classList.toggle('active');
+    });
+
+    // Search Autocomplete (Note: /trending route is missing, so this won't work yet)
+    const searchInput = document.getElementById('search-input');
+    const autocompleteResults = document.getElementById('autocomplete-results');
+    
+    searchInput.addEventListener('input', async () => {
+      const query = searchInput.value.trim();
+      if (query.length < 2) {
+        autocompleteResults.style.display = 'none';
+        return;
+      }
+
+      try {
+        const response = await fetch('/trending');
+        const keywords = await response.json();
+        const filteredKeywords = keywords.filter(k => k.toLowerCase().startsWith(query.toLowerCase()));
+        
+        autocompleteResults.innerHTML = '';
+        if (filteredKeywords.length === 0) {
+          autocompleteResults.style.display = 'none';
+          return;
+        }
+
+        filteredKeywords.forEach(keyword => {
+          const div = document.createElement('div');
+          div.style.padding = '8px 16px';
+          div.style.cursor = 'pointer';
+          div.textContent = keyword;
+          div.addEventListener('click', () => {
+            searchInput.value = keyword;
+            autocompleteResults.style.display = 'none';
+            searchInput.form.submit();
+          });
+          div.addEventListener('mouseover', () => {
+            div.style.backgroundColor = '#f3f4f6';
+          });
+          div.addEventListener('mouseout', () => {
+            div.style.backgroundColor = 'white';
+          });
+          autocompleteResults.appendChild(div);
+        });
+
+        autocompleteResults.style.display = 'block';
+      } catch (error) {
+        console.error('Error fetching trending keywords:', error);
+        autocompleteResults.style.display = 'none';
+      }
+    });
+
+    // Hide autocomplete when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !autocompleteResults.contains(e.target)) {
+        autocompleteResults.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
