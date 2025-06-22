@@ -5,9 +5,9 @@ import os
 from summarizer import summarize_text
 
 # API Keys
-NEWSAPI_KEY = "4c9b4bd2a86c49e7922ed927572d5aac"
-GUARDIAN_API_KEY = "9415e97d-f79d-48bf-ad72-97a334bdec77"
-NYT_API_KEY = "a7NuIG3b2j6VlN7AO7OUI6LQ2BgeRHIr"
+NEWSAPI_KEY = os.environ.get("NEWSAPI_KEY")
+GUARDIAN_API_KEY = os.environ.get("GUARDIAN_API_KEY")
+NYT_API_KEY = os.environ.get("NYT_API_KEY")
 
 # News sources
 NEWS_SOURCES = {
