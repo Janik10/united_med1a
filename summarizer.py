@@ -4,6 +4,7 @@ Uses NLTK + NetworkX only (no transformers / torch)
 """
 
 import nltk
+nltk.download("punkt")
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from nltk.cluster.util import cosine_distance
