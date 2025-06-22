@@ -4,16 +4,17 @@ Uses NLTK + NetworkX only (no transformers / torch)
 """
 
 import nltk
-nltk.download("punkt")
+
+# Download required NLTK resources (silent if already present)
+nltk.download("punkt", quiet=True)       # sentence tokenizer
+nltk.download("punkt_tab", quiet=True)   # tokenization tables (NLTK ≥3.8)
+nltk.download("stopwords", quiet=True)   # stop-word list
+
 from nltk.tokenize import sent_tokenize, word_tokenize
 from nltk.corpus import stopwords
 from nltk.cluster.util import cosine_distance
 import numpy as np
 import networkx as nx
-
-# Download NLTK data on first boot (safe if already present)
-nltk.download("punkt", quiet=True)
-nltk.download("stopwords", quiet=True)
 
 STOP_WORDS = set(stopwords.words("english"))
 
